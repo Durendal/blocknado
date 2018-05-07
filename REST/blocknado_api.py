@@ -35,8 +35,8 @@ class BlocknadoREST:
     def markets(self):
         return self.publicAPICall("markets");
 
-    def orderbook(self, symbol):
-        if symbol not in self._markets:
-            raise NonexistantMarketException("The selected market: %s does not exist" % symbol)
-        symbol = [symbol]
-        return self.publicAPICall("orderbook", params=symbol)
+    def orderbook(self, market):
+        if market not in self._markets:
+            raise NonexistantMarketException("The selected market: %s does not exist" % market)
+        market = [market]
+        return self.publicAPICall("orderbook", params=market)
