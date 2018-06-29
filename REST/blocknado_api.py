@@ -29,6 +29,15 @@ class BlocknadoREST:
     def _getURL(self, call):
         return "%s/%s" % (self.baseURL, call)
 
+    def signData(self, params):
+        return hmac.new(bytes(self._apiSecret, 'latin-1'), params, hashlib.sha512).hexdigest()
+
+    def genHeaders(self, params):
+        return {
+            "Key": self._apiKey,
+            "Sign": self.signData(params)
+        }
+
     def publicAPICall(self, call, params=[]):
         url = self._getURL(call)
         if len(params) > 0:
@@ -39,17 +48,10 @@ class BlocknadoREST:
     def privateAPICall(self, call, params={}):
         if not self.checkCredentialsSet():
             raise UnauthenticatedException("Must provide an API Key and Secret")
-        url = self._getURL(call)
         params['nonce'] = int(time())
         params = urlencode(params).encode('utf-8')
-        sign = hmac.new(bytes(self._apiSecret, 'latin-1'), params, hashlib.sha512).hexdigest()
-        headers = {
-            "Key": self._apiKey,
-            "Sign": sign
-        }
-
-        data = requests.post(url, data=params, headers=headers)
-        return data.json()
+        headers = self.genHeaders(params)
+        return requests.post(self._getURL(call), data=params, headers=headers).json()
 
     def markets(self):
         return self.publicAPICall("markets");
