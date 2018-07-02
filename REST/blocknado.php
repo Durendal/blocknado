@@ -53,7 +53,6 @@ class BlocknadoREST {
 
   public function genHeaders($params) {
       return array(
-          "User-Agent: Blocknado PHP API Wrapper",
           "Key: " .$this->_apiKey,
           "Sign: " .$this->signData($params)
       );
