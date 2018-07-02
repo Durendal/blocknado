@@ -16,7 +16,9 @@ class BlocknadoREST:
         self.baseURL = 'https://blocknado.com/api/v1'
         self._apiKey = apiKey
         self._apiSecret = apiSecret
+        self._nonce = int(time())
         self._markets = [x['market'] for x in self.markets()]
+
 
     def getCredentials(self):
         return (self._apiKey, self._apiSecret)
@@ -30,10 +32,11 @@ class BlocknadoREST:
         return "%s/%s" % (self.baseURL, call)
 
     def signData(self, params):
-        return hmac.new(bytes(self._apiSecret, 'latin-1'), params, hashlib.sha512).hexdigest()
+        return hmac.new(self._apiSecret.encode('utf-8'), params.encode('utf-8'), hashlib.sha512).hexdigest()
 
     def genHeaders(self, params):
         return {
+            "User-Agent": "Blocknado Python API Wrapper",
             "Key": self._apiKey,
             "Sign": self.signData(params)
         }
@@ -48,9 +51,10 @@ class BlocknadoREST:
     def privateAPICall(self, call, params={}):
         if not self.checkCredentialsSet():
             raise UnauthenticatedException("Must provide an API Key and Secret")
-        params['nonce'] = int(time())
-        params = urlencode(params).encode('utf-8')
-        headers = self.genHeaders(params)
+        params['nonce'] = self._nonce
+        self._nonce += 1
+        encParams = urlencode(params)
+        headers = self.genHeaders(encParams)
         return requests.post(self._getURL(call), data=params, headers=headers).json()
 
     def markets(self):
