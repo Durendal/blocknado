@@ -2,7 +2,7 @@
 
 class BlocknadoREST {
 
-  public $baseURL;
+  private $_baseURL;
   private $_apiKey;
   private $_apiSecret;
   private $_nonce;
@@ -10,11 +10,14 @@ class BlocknadoREST {
   private $_ch;
 
   public function __construct($apiKey, $apiSecret) {
-    $this->baseURL = 'https://blocknado.com/api/v1';
+    $this->_baseURL = 'https://blocknado.com/api/v1';
     $this->_apiKey = $apiKey;
     $this->_apiSecret = $apiSecret;
     $this->_nonce = time();
-    $this->_markets = array_map(function($market) { return $market['market']; }, $this->markets());
+    $this->_markets = array_map(
+      function($market) { return $market['market']; },
+      $this->markets()
+    );
     $this->_ch = null;
     $this->setupCURL();
   }
@@ -44,19 +47,15 @@ class BlocknadoREST {
   }
 
   public function _getURL($call) {
-      return sprintf("%s/%s", $this->baseURL, $call);
-  }
-
-  public function signData($params) {
-      return hash_hmac('sha512', $params, $this->_apiSecret);
+      return sprintf("%s/%s", $this->_baseURL, $call);
   }
 
   public function genHeaders($params) {
       return array(
           "Key: " .$this->_apiKey,
-          "Sign: " .$this->signData($params)
+          "Sign: " .hash_hmac('sha512', $params, $this->_apiSecret)
       );
-    }
+  }
 
   public function publicAPICall($call, $params=array()) {
       $this->setupCURL();
@@ -67,17 +66,16 @@ class BlocknadoREST {
       curl_setopt($this->_ch, CURLOPT_POST, 0);
 
       $res = curl_exec($this->_ch);
-      if($res != false) {
+      if($res != false)
           return json_decode($res, true);
-      } else {
-          return "Something went wrong";
-      }
+      else
+          return array("success" => 0, "message" => "No response received");
   }
 
   public function privateAPICall($call, $params=array()) {
       $this->setupCURL();
       if(!$this->checkCredentialsSet())
-          die("Must provide an API Key and Secret");
+          throw new Exception("Must provide an API Key and Secret");
       $params['nonce'] = $this->_nonce;
       $this->_nonce++;
       $params = http_build_query($params, '', '&');
@@ -89,11 +87,11 @@ class BlocknadoREST {
       curl_setopt($this->_ch, CURLOPT_HTTPHEADER, $headers);
       $res = curl_exec($this->_ch);
 
-      if($res != false) {
+      if($res != false)
           return json_decode($res, true);
-      } else {
-          return "Something went wrong";
-      }
+      else
+          return array("success" => 0, "message" => "No response received");
+
   }
 
   public function markets() {
@@ -102,16 +100,33 @@ class BlocknadoREST {
 
   public function orderbook($market) {
       if(!in_array(strtoupper($market), $this->_markets))
-          die(sprintf("The selected market: %s does not exist", $market));
+          throw new Exception(
+            sprintf("The selected market: %s does not exist", $market)
+          );
+
       return $this->publicAPICall("orderbook", array($market));
   }
 
   public function buy($market, $amount, $price) {
-      return $this->privateAPICall('buy', array("market" => $market, "amount" => $amount, "price" => $price));
+      return $this->privateAPICall(
+        'buy',
+        array(
+          "market" => $market,
+          "amount" => $amount,
+          "price" => $price
+        )
+      );
   }
 
   public function sell($market, $amount, $price) {
-      return $this->privateAPICall('sell', array("market" => $market, "amount" => $amount, "price" => $price));
+      return $this->privateAPICall(
+        'sell',
+        array(
+          "market" => $market,
+          "amount" => $amount,
+          "price" => $price
+        )
+      );
   }
 
   public function cancel($orderID) {
