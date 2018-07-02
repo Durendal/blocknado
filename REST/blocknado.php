@@ -64,8 +64,7 @@ class BlocknadoREST {
       if(count($params) > 0)
           $url = sprintf("%s/%s", $url, implode('/', $params));
       curl_setopt($this->_ch, CURLOPT_URL, $url);
-      curl_setopt($this->_ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-      curl_setopt($this->_ch, CURLOPT_TIMEOUT, 10);
+      curl_setopt($this->_ch, CURLOPT_POST, 0);
 
       $res = curl_exec($this->_ch);
       if($res != false) {
@@ -85,10 +84,9 @@ class BlocknadoREST {
       $headers = $this->genHeaders($params);
       $url = $this->_getURL($call);
       curl_setopt($this->_ch, CURLOPT_URL, $url);
+      curl_setopt($this->_ch, CURLOPT_POST, 1);
       curl_setopt($this->_ch, CURLOPT_POSTFIELDS, $params);
       curl_setopt($this->_ch, CURLOPT_HTTPHEADER, $headers);
-      curl_setopt($this->_ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-      curl_setopt($this->_ch, CURLOPT_TIMEOUT, 10);
       $res = curl_exec($this->_ch);
 
       if($res != false) {
